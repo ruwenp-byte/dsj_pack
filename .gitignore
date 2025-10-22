@@ -1,0 +1,40 @@
+# Python & Builds
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.build/
+dist/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Environments/Editor
+.venv/
+env/
+venv/
+.vscode/
+.idea/
+
+# Docker / Compose Artefakte
+**/.DS_Store
+*.log
+
+# Secrets & Tokens
+.env
+*.env
+
+# MLflow Runs (lokale Artefakte, meist groß)
+mlruns/
+
+# n8n lokale Daten (falls vorhanden)
+.n8n/
+
+# Daten – Beispiel behalten, Rest ignorieren
+work/reports/
+work/*.csv
+!work/sample_data.csv
+

@@ -1,0 +1,42 @@
+services:
+  jupyter:
+    image: jupyter/scipy-notebook:latest
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=   # leer = kein Token (nur lokal/Dev!)
+    volumes:
+      - ./work:/home/jovyan/work
+      - ./work:/work
+    command: >
+      bash -lc "pip install --no-cache-dir mlflow fastapi uvicorn nbdime jupyterlab-lsp ruff black mypy pytest &&
+      start-notebook.sh --NotebookApp.ip=0.0.0.0 --NotebookApp.port=8888 --NotebookApp.token='' --NotebookApp.password=''"
+    restart: unless-stopped
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlruns
+    volumes:
+      - ./mlruns:/mlruns
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./work:/home/jovyan/work
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
