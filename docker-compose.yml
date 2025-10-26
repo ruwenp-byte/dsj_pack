@@ -1,10 +1,105 @@
+networks:
+  mlnet: {}  
+
+volumes:
+  n8n_data:
+  mlflow_db:
+
+
 services:
+  mlflow_db_upgrade:
+    image: ghcr.io/mlflow/mlflow:v2.16.0
+    init: true
+    volumes:
+      - mlflow_db:/mlflow_db
+    command: >
+      sh -c "
+      if [ -f /mlflow_db/mlflow.db ]; then
+        echo '[upgrade] backing up db...' &&
+        cp /mlflow_db/mlflow.db /mlflow_db/mlflow.db.bak_$(date +%s) || true ;
+      fi ;
+      echo '[upgrade] running mlflow db upgrade...' &&
+      mlflow db upgrade sqlite:////mlflow_db/mlflow.db
+      "
+    networks: [mlnet]
+    restart: "no"
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.0
+    init: true
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server 
+      --host 0.0.0.0 
+      --port 5000
+      --backend-store-uri sqlite:////mlflow_db/mlflow.db
+      --default-artifact-root /mlruns
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - ./mlruns:/mlruns
+      - ./mlflow_db:/mlflow_db
+    restart: unless-stopped
+    networks: [mlnet]                                    # <- neu
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+# Einmal-Job: wartet auf MLflow (healthcheck), trainiert & registriert Modell und endet.
+  trainer:
+    image: python:3.11-slim
+    init: true
+    working_dir: /app
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    environment:
+      - TZ=Europe/Berlin
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MODEL_NAME=diabetes_regressor
+    volumes:
+      - ./scripts:/app/scripts
+    command: >
+      sh -c "apt-get update && apt-get install -y --no-install-recommends build-essential gcc wget curl &&
+             rm -rf /var/lib/apt/lists/* &&
+             pip install --no-cache-dir mlflow==2.16.0 scikit-learn==1.5.2 &&
+             python scripts/train_and_register.py"
+    networks: [mlnet]
+    restart: "no"
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    init: true
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./work:/home/jovyan/work
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MODEL_NAME=diabetes_regressor
+      - MODEL_STAGE=None
+    depends_on:
+      trainer:
+        condition: service_completed_successfully
+    networks: [mlnet] 
+
   jupyter:
     image: jupyter/scipy-notebook:latest
+    init: true
     ports:
       - "8888:8888"
     environment:
       - JUPYTER_TOKEN=   # leer = kein Token (nur lokal/Dev!)
+      - MLFLOW_TRACKING_URI=http://mlflow:5000         # <- neu
+      - TZ=Europe/Berlin
     volumes:
       - ./work:/home/jovyan/work
       - ./work:/work
@@ -12,31 +107,28 @@ services:
       bash -lc "pip install --no-cache-dir mlflow fastapi uvicorn nbdime jupyterlab-lsp ruff black mypy pytest &&
       start-notebook.sh --NotebookApp.ip=0.0.0.0 --NotebookApp.port=8888 --NotebookApp.token='' --NotebookApp.password=''"
     restart: unless-stopped
+    networks: [mlnet] 
 
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.14.1
-    ports:
-      - "5000:5000"
-    command: >
-      mlflow server --host 0.0.0.0 --port 5000
-      --backend-store-uri sqlite:///mlflow.db
-      --default-artifact-root /mlruns
-    volumes:
-      - ./mlruns:/mlruns
-    restart: unless-stopped
 
-  api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
+
+
+
+
+  n8n:
+    image: n8nio/n8n:latest
+    init: true
     ports:
-      - "8000:8000"
+      - "5678:5678"
+    environment:
+      - TZ=Europe/Berlin
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      # Für Verschlüsselung von Credentials – setze einen stabilen Key:
+      - N8N_ENCRYPTION_KEY=sLgiWD4mA+gqa0PFkzc0RVKPlCnPTl2o
+    depends_on:
+      - api
     volumes:
-      - ./work:/home/jovyan/work
+      - n8n_data:/home/node/.n8n
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
+    networks: [mlnet]
+

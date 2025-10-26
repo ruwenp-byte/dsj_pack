@@ -1,10 +1,10 @@
-# scripts/train_and_register.py
 import os
-import mlflow, mlflow.sklearn
+import mlflow
+import mlflow.sklearn
 from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import ElasticNet
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import root_mean_squared_error  # <-- neuer Import
 
 TRACKING = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 MODEL_NAME = os.getenv("MODEL_NAME", "diabetes_regressor")
@@ -20,7 +20,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
 model = ElasticNet(alpha=0.4, l1_ratio=0.5, random_state=42)
 model.fit(X_train, y_train)
-rmse = mean_squared_error(y_test, model.predict(X_test), squared=False)
+
+# ✅ Verwende neue Funktion (ab sklearn 1.4)
+rmse = root_mean_squared_error(y_test, model.predict(X_test))
 print(f"[trainer] RMSE: {rmse:.4f}")
 
 with mlflow.start_run(run_name="baseline"):
