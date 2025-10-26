@@ -49,6 +49,11 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
+**Im Developer Mode die Code Updates wie folgt integrieren:**
+```bash
+docker compose up -d api
+```
+
 **Ablauf beim Start:**
 1. MLflow-DB wird automatisch migriert (Upgrade bei Versionswechsel).  
 2. MLflow startet (Tracking & Registry).  
