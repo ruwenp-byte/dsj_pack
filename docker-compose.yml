@@ -11,27 +11,33 @@ services:
     image: ghcr.io/mlflow/mlflow:v2.16.0
     init: true
     volumes:
-      - mlflow_db:/mlflow_db
+      - ./mlflow_db:/mlflow_db
     command: >
-      sh -c "
-      if [ -f /mlflow_db/mlflow.db ]; then
-        echo '[upgrade] backing up db...' &&
-        cp /mlflow_db/mlflow.db /mlflow_db/mlflow.db.bak_$(date +%s) || true ;
-      fi ;
-      echo '[upgrade] running mlflow db upgrade...' &&
-      mlflow db upgrade sqlite:////mlflow_db/mlflow.db
-      "
+      sh -c '
+        set -e;
+        mkdir -p /mlflow_db;
+        if [ -f /mlflow_db/mlflow.db ]; then
+          echo "[upgrade] existing DB detected, skipping migration.";
+          exit 0;
+        fi;
+        echo "[upgrade] no DB found -> initializing schema...";
+        mlflow db upgrade sqlite:////mlflow_db/mlflow.db;
+        echo "[upgrade] schema initialized.";
+      '
     networks: [mlnet]
     restart: "no"
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.16.0
     init: true
+    depends_on:
+      mlflow_db_upgrade:
+        condition: service_completed_successfully
     ports:
       - "5000:5000"
     command: >
-      mlflow server 
-      --host 0.0.0.0 
+      mlflow server
+      --host 0.0.0.0
       --port 5000
       --backend-store-uri sqlite:////mlflow_db/mlflow.db
       --default-artifact-root /mlruns
@@ -39,15 +45,15 @@ services:
       - TZ=Europe/Berlin
     volumes:
       - ./mlruns:/mlruns
-      - ./mlflow_db:/mlflow_db
+      - .mlflow_db:/mlflow_db
     restart: unless-stopped
-    networks: [mlnet]                                    # <- neu
+    networks: [mlnet]                                    
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5000"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000').read(); print('ok')"]
       interval: 10s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
 
 # Einmal-Job: wartet auf MLflow (healthcheck), trainiert & registriert Modell und endet.
   trainer:
@@ -87,9 +93,17 @@ services:
       - MODEL_NAME=diabetes_regressor
       - MODEL_STAGE=None
     depends_on:
+      mlflow:
+        condition: service_healthy
       trainer:
         condition: service_completed_successfully
     networks: [mlnet] 
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs').read(); print('ok')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   jupyter:
     image: jupyter/scipy-notebook:latest
@@ -125,7 +139,8 @@ services:
       - N8N_GIT_NODE_DISABLE_BARE_REPOS=true
       - DB_SQLITE_POOL_SIZE=8
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     volumes:
       - n8n_data:/home/node/.n8n
     restart: unless-stopped
