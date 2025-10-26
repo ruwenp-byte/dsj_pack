@@ -44,6 +44,7 @@ flowchart TD
 ## 🚀 Starten
 
 ```bash
+docker compose down
 docker compose build --no-cache
 docker compose up -d
 ```
@@ -141,5 +142,5 @@ docker compose run --rm trainer
 
 **Stand:** Oktober 2025  
 **Autor:** Ruwen Poljak  
-**Name:** Dein automatisiertes MLOps-Docker-Setup  
+**Name:** MLOps-Docker-Setup  
 *(MLflow + FastAPI + Jupyter + n8n + Trainer-Service)*
