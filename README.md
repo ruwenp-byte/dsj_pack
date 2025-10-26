@@ -15,10 +15,10 @@ Dieses Setup bringt dir eine vollautomatische lokale MLOps-Umgebung:
 ```mermaid
 flowchart TD
   subgraph MLNET["Docker network: mlnet"]
-    Jupyter[JupyterLab<br/>Port 8888] -->|logs runs| MLflow[MLflow UI<br/>Port 5000]
-    Trainer[Trainer service<br/>(train_and_register.py)] -->|registers model| MLflow
-    MLflow -->|model registry<br/>(stage: None)| API[FastAPI<br/>Port 8000]
-    API -->|predictions| N8N[n8n workflows<br/>Port 5678]
+    Jupyter[JupyterLab - Port 8888] -->|logs runs and artifacts| MLflow[MLflow UI - Port 5000]
+    Trainer[Trainer service - train_and_register.py] -->|registers model| MLflow
+    MLflow -->|model registry - stage None| API[FastAPI - Port 8000]
+    API -->|predictions| N8N[n8n workflows - Port 5678]
     N8N -->|HTTP requests| API
   end
 
