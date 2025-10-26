@@ -140,6 +140,6 @@ docker compose run --rm trainer
 ---
 
 **Stand:** Oktober 2025  
-**Autor:** Ruwen Poljak
+**Autor:** Ruwen Poljak  
 **Name:** Dein automatisiertes MLOps-Docker-Setup  
 *(MLflow + FastAPI + Jupyter + n8n + Trainer-Service)*
