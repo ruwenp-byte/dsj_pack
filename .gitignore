@@ -1,40 +1,127 @@
-# Python & Builds
+# --- Python / FastAPI / MLflow ---
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.egg-info/
-.build/
-dist/
-.eggs/
-
-# Jupyter
-.ipynb_checkpoints/
-**/.ipynb_checkpoints/
-
-# Environments/Editor
-.venv/
-env/
-venv/
-.vscode/
-.idea/
-
-# Docker / Compose Artefakte
-**/.DS_Store
 *.log
-
-# Secrets & Tokens
+*.egg-info/
 .env
-*.env
+venv/
+.env.local
+instance/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
 
-# MLflow Runs (lokale Artefakte, meist groß)
+# --- Jupyter ---
+*.ipynb_checkpoints
+*.ipynb_checkpoints/*
+*.ipynb_checkpoints/**
+*.ipynb~
+
+# --- MLflow ---
 mlruns/
+mlflow_db/
+mlflow.db
+mlflow.db.bak_*
+**/mlflow.db
+**/mlflow.db.bak_*
 
-# n8n lokale Daten (falls vorhanden)
-.n8n/
+# --- n8n ---
+n8n_data/
+**/.n8n/
 
-# Daten – Beispiel behalten, Rest ignorieren
-work/reports/
-work/*.csv
-!work/sample_data.csv
+# --- Docker ---
+# Container/Build-Artefakte
+**/.docker/
+**/.dockerignore
+**/Dockerfile~
+**/docker-compose.override.yml
+**/.env.docker
+**/.env.production
+**/tmp/
+**/logs/
+**/.DS_Store
+
+# --- System/Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Reports / Workdir ---
+work/
+reports/
+output/
+*.csv
+*.parquet
+*.xlsx
+*.zip
+*.tmp
+# --- Python / FastAPI / MLflow ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.egg-info/
+.env
+venv/
+.env.local
+instance/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Jupyter ---
+*.ipynb_checkpoints
+*.ipynb_checkpoints/*
+*.ipynb_checkpoints/**
+*.ipynb~
+
+# --- MLflow ---
+mlruns/
+mlflow_db/
+mlflow.db
+mlflow.db.bak_*
+**/mlflow.db
+**/mlflow.db.bak_*
+
+# --- n8n ---
+n8n_data/
+**/.n8n/
+
+# --- Docker ---
+# Container/Build-Artefakte
+**/.docker/
+**/.dockerignore
+**/Dockerfile~
+**/docker-compose.override.yml
+**/.env.docker
+**/.env.production
+**/tmp/
+**/logs/
+**/.DS_Store
+
+# --- System/Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Reports / Workdir ---
+work/
+reports/
+output/
+*.csv
+*.parquet
+*.xlsx
+*.zip
+*.tmp
 
