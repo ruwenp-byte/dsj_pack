@@ -7,6 +7,7 @@ import mlflow.pyfunc
 import pandas as pd
 from pathlib import Path
 
+WORKDIR = Path("/home/jovyan/work")
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 MODEL_NAME = os.getenv("MODEL_NAME", "diabetes_regressor")  # anpassen
 MODEL_STAGE = os.getenv("MODEL_STAGE", "None")   # <- hier "None"
@@ -15,8 +16,8 @@ app = FastAPI(title="Predict API")
 _model = None
 
 class ReportRequest(BaseModel):
-    csv_path: str = "/home/jovyan/work/run_task.csv"
-    out_path: str = "/home/jovyan/work/reports/task_summary.md"
+    csv_path: str = "run_task.csv"
+    out_path: str = "reports/task_summary.md"
 
 class PredictRequest(BaseModel):
     data: list[dict]
@@ -47,7 +48,13 @@ def predict(req: PredictRequest):
 @app.post("/run-task")
 def run_task(req: ReportRequest):
     csv = Path(req.csv_path)
+    if not csv.is_absolute():
+        csv = WORKDIR / req.csv_path
+
     out = Path(req.out_path)
+    if not out.is_absolute():
+        out = WORKDIR / req.out_path
+
     df = pd.read_csv(csv)
     n = len(df)
     rev_mean = float(df["revenue"].mean())
